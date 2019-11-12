@@ -13,7 +13,10 @@ use GlobalPayments\Api\Entities\Address;
 
 class GenerateTokenRequest extends AbstractRequest
 {
+    protected $prodEndpoint = "https://pay.realexpayments.com/pay";
     protected $testEndpoint = "https://pay.sandbox.realexpayments.com/pay";
+
+    private $data;
 
     public function setAmount($value)
     {
@@ -175,13 +178,27 @@ class GenerateTokenRequest extends AbstractRequest
         return $this->getParameter('shippingAddressCountry');
     }
 
+    public function setTestMode($value)
+    {
+        $this->setParameter('test_mode', $value);
+    }
+
+    public function getTestMode()
+    {
+        return $this->getParameter('test_mode');
+    }
+
     public function getData()
     {
         $config = new ServicesConfig();
         $config->merchantId = $this->getMerchantId();
         $config->accountId = $this->getAccount();
         $config->sharedSecret = $this->getSecret();
-        $config->serviceUrl = $this->testEndpoint;
+        if ($this->getTestMode()) {
+            $config->serviceUrl = $this->testEndpoint;
+        } else {
+            $config->serviceUrl = $this->prodEndpoint;
+        }
 
         $config->hostedPaymentConfig = new HostedPaymentConfig();
         $config->hostedPaymentConfig->version = HppVersion::VERSION_2;
@@ -197,7 +214,7 @@ class GenerateTokenRequest extends AbstractRequest
         $billingAddress->streetAddress3 = "";
         $billingAddress->city = $this->getBillingAddressCity();
         $billingAddress->postalCode = $this->getBillingAddressPostalCode();
-        $billingAddress->country = $this->getBillingAddressCountry();
+        $billingAddress->country = 826; //$this->getBillingAddressCountry();
 
         $shippingAddress = new Address();
         $shippingAddress->streetAddress1 = $this->getShippingAddressStreet1();
@@ -205,7 +222,7 @@ class GenerateTokenRequest extends AbstractRequest
         $shippingAddress->streetAddress3 = "";
         $shippingAddress->city = $this->getShippingAddressCity();
         $shippingAddress->postalCode = $this->getShippingAddressPostalCode();
-        $shippingAddress->country = $this->getShippingAddressCountry();
+        $shippingAddress->country = 826; //$this->getShippingAddressCountry();
 
         $data['config'] = $config;
         $data['hosted_payment_data'] = $hostedPaymentData;
@@ -225,27 +242,16 @@ class GenerateTokenRequest extends AbstractRequest
                            ->withAddress($data['shipping_address'], AddressType::SHIPPING)
                            ->serialize();
 
-            dd($hppJson);
+            $this->data = $hppJson;
         } catch (ApiException $ex) {
             dd($ex->getMessage());
         }
-        dd($data);
-        $headers = [
 
-        ];
+        return $this->createResponse($this->data);
+    }
 
-        //foreach ($data as $di => $d) {
-        //    $data[$di] = (string) $d;
-        //}
-
-        if ($this->getParameter('testMode')) {
-            $endpoint = $this->testEndpoint;
-        } else {
-            $endpoint = $this->liveEndpoint;
-        }
-
-        $httpResponse = $this->httpClient->request('POST', $endpoint, $headers, json_encode($data));
-
-        return $this->response = new Response($this, $httpRequest->getBody()->getContents(), $httpResponse->getHeaders());
+    public function createResponse($data)
+    {
+        return $this->response = new GenerateTokenResponse($data);
     }
 }
