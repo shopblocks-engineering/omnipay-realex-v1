@@ -218,6 +218,26 @@ class RemoteGateway extends AbstractGateway
         return $this->getParameter('shippingAddressCountry');
     }
 
+    public function setResponseJson($value)
+    {
+        $this->setParameter('response_json', $value);
+    }
+
+    public function getResponseJson()
+    {
+        return $this->getParameter('response_json');
+    }
+
+    public function setTestMode($value)
+    {
+        $this->setParameter('test_mode', $value);
+    }
+
+    public function getTestMode()
+    {
+        return $this->getParameter('test_mode');
+    }
+
     public function purchase(array $parameters = array())
     {
         if (array_key_exists('mobileType', $parameters)) {
@@ -237,6 +257,8 @@ class RemoteGateway extends AbstractGateway
      */
     public function completePurchase(array $parameters = array())
     {
+        return $this->createRequest('\Omnipay\Realex\Message\CompletePurchaseRequest', $parameters);
+
         return $this->createRequest('\Omnipay\Realex\Message\VerifySigRequest', $parameters);
     }
 
