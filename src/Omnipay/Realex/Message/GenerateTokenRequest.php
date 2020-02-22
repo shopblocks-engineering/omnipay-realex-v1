@@ -202,8 +202,11 @@ class GenerateTokenRequest extends AbstractRequest
 
         $config->hostedPaymentConfig = new HostedPaymentConfig();
         $config->hostedPaymentConfig->version = HppVersion::VERSION_2;
+        $config->hostedPaymentConfig->cardStorageEnabled = "1";
 
         $hostedPaymentData = new HostedPaymentData();
+        $hostedPaymentData->offerToSaveCard = true; // display the save card tick box
+        $hostedPaymentData->customerExists = false;
         $hostedPaymentData->customerEmail = $this->getCustomerEmail();
         $hostedPaymentData->customerPhoneMobile = $this->getCustomerPhoneMobile();
         $hostedPaymentData->addressesMatch = false;
@@ -229,6 +232,8 @@ class GenerateTokenRequest extends AbstractRequest
         $data['billing_address'] = $billingAddress;
         $data['shipping_address'] = $shippingAddress;
 
+        $data['amount'] = $this->getAmount();
+
         return $data;
     }
 
@@ -236,10 +241,11 @@ class GenerateTokenRequest extends AbstractRequest
     {
         try {
             $service = new HostedService($data['config']);
-            $hppJson = $service->charge(20)
+            $hppJson = $service->charge($data['amount'])
                            ->withCurrency("GBP")
                            ->withAddress($data['billing_address'], AddressType::BILLING)
                            ->withAddress($data['shipping_address'], AddressType::SHIPPING)
+                           ->withHostedPaymentData($data['hosted_payment_data'])
                            ->serialize();
 
             $this->data = $hppJson;
