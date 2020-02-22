@@ -7,6 +7,8 @@ use GlobalPayments\Api\ServicesConfig;
 use GlobalPayments\Api\HostedPaymentConfig;
 use GlobalPayments\Api\Entities\Enums\HppVersion;
 use GlobalPayments\Api\Entities\Enums\AddressType;
+use GlobalPayments\Api\Entities\Enums\RecurringSequence;
+use GlobalPayments\Api\Entities\Enums\RecurringType;
 use GlobalPayments\Api\Services\HostedService;
 use GlobalPayments\Api\Entities\HostedPaymentData;
 use GlobalPayments\Api\Entities\Address;
@@ -202,11 +204,16 @@ class GenerateTokenRequest extends AbstractRequest
 
         $config->hostedPaymentConfig = new HostedPaymentConfig();
         $config->hostedPaymentConfig->version = HppVersion::VERSION_2;
-        $config->hostedPaymentConfig->cardStorageEnabled = "1";
+        $config->hostedPaymentConfig->displaySavedCards = true;
 
         $hostedPaymentData = new HostedPaymentData();
         $hostedPaymentData->offerToSaveCard = true; // display the save card tick box
+        
+        //here we need to check whether the customer is already stored, if so we can do something with their data
         $hostedPaymentData->customerExists = false;
+        //$hostedPaymentData->customerKey = '98117df6-712e-4d2a-b5cf-f23dd8cfede3'; 
+        //$hostedPaymentData->paymentKey = '98117df6-712e-4d2a-b5cf-f23dd8cfede3';
+
         $hostedPaymentData->customerEmail = $this->getCustomerEmail();
         $hostedPaymentData->customerPhoneMobile = $this->getCustomerPhoneMobile();
         $hostedPaymentData->addressesMatch = false;
@@ -246,6 +253,7 @@ class GenerateTokenRequest extends AbstractRequest
                            ->withAddress($data['billing_address'], AddressType::BILLING)
                            ->withAddress($data['shipping_address'], AddressType::SHIPPING)
                            ->withHostedPaymentData($data['hosted_payment_data'])
+                           ->withRecurringInfo(RecurringType::FIXED, RecurringSequence::FIRST)
                            ->serialize();
 
             $this->data = $hppJson;
