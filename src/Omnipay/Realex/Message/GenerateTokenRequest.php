@@ -30,6 +30,16 @@ class GenerateTokenRequest extends AbstractRequest
         return $this->getParameter('amount');
     }
 
+    public function setCustomerReference($value)
+    {
+        $this->setParameter('customerReference', $value);
+    }
+
+    public function getCustomerReference()
+    {
+        return $this->getParameter('customerReference');
+    }
+
     public function setMerchantId($value)
     {
         $this->setParameter('merchantId', $value);
@@ -210,8 +220,13 @@ class GenerateTokenRequest extends AbstractRequest
         $hostedPaymentData->offerToSaveCard = true; // display the save card tick box
         
         //here we need to check whether the customer is already stored, if so we can do something with their data
-        $hostedPaymentData->customerExists = false;
-        //$hostedPaymentData->customerKey = '98117df6-712e-4d2a-b5cf-f23dd8cfede3'; 
+        if (!empty($this->getCustomerReference())) {
+            $hostedPaymentData->customerKey = $this->getCustomerReference(); 
+            $hostedPaymentData->customerExists = true;
+        } else {
+            $hostedPaymentData->customerExists = false;            
+        }
+
         //$hostedPaymentData->paymentKey = '98117df6-712e-4d2a-b5cf-f23dd8cfede3';
 
         $hostedPaymentData->customerEmail = $this->getCustomerEmail();
@@ -253,7 +268,7 @@ class GenerateTokenRequest extends AbstractRequest
                            ->withAddress($data['billing_address'], AddressType::BILLING)
                            ->withAddress($data['shipping_address'], AddressType::SHIPPING)
                            ->withHostedPaymentData($data['hosted_payment_data'])
-                           ->withRecurringInfo(RecurringType::FIXED, RecurringSequence::FIRST)
+                           ->withRecurringInfo(RecurringType::VARIABLE, RecurringSequence::FIRST)
                            ->serialize();
 
             $this->data = $hppJson;
