@@ -211,20 +211,19 @@ class GenerateTokenRequest extends AbstractRequest
         } else {
             $config->serviceUrl = $this->prodEndpoint;
         }
-
+        
         $config->hostedPaymentConfig = new HostedPaymentConfig();
         $config->hostedPaymentConfig->version = HppVersion::VERSION_2;
-        $config->hostedPaymentConfig->displaySavedCards = true;
+        $config->hostedPaymentConfig->cardStorageEnabled = "1";
 
         $hostedPaymentData = new HostedPaymentData();
-        $hostedPaymentData->offerToSaveCard = true; // display the save card tick box
         
         //here we need to check whether the customer is already stored, if so we can do something with their data
         if (!empty($this->getCustomerReference())) {
             $hostedPaymentData->customerKey = $this->getCustomerReference(); 
-            $hostedPaymentData->customerExists = true;
+            $hostedPaymentData->customerExists = 1;
         } else {
-            $hostedPaymentData->customerExists = false;            
+            $hostedPaymentData->customerExists = 0;            
         }
 
         //$hostedPaymentData->paymentKey = '98117df6-712e-4d2a-b5cf-f23dd8cfede3';
