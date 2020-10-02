@@ -8,6 +8,7 @@ use Omnipay\Realex\Message\AuthResponse;
 use Omnipay\Realex\Message\RemoteAbstractResponse;
 use Omnipay\Realex\Message\VerifySigRequest;
 use Omnipay\Realex\Message\VerifySigResponse;
+use Carbon\Carbon;
 
 /**
  * Realex Remote Gateway
@@ -17,6 +18,64 @@ class RemoteGateway extends AbstractGateway
     public function getName()
     {
         return 'Realex Remote';
+    }
+    
+    public function generatePayByLink($params)
+    {
+        $paymentMethod = $params['paymentMethod'];
+
+        $paymentMethod['data'] = json_decode($paymentMethod['data']);
+
+        $hashData = [
+            'TIMESTAMP' => \Carbon\Carbon::now()->format('Ymdhis'),
+            'MERCHANT_ID' => $paymentMethod['data']->testMode == 1 ? $paymentMethod['data']->sandbox_merchantId : $paymentMethod['data']->live_merchantId,
+            'ORDER_ID' => $params['order']['id'] . "-". $params['payment_identifier'],
+            'AMOUNT' => preg_replace('/[^0-9]/', '', sprintf('%01.2f', $params['amount'])),   
+            'CURRENCY' => "GBP",            
+        ];
+
+        $secret = $paymentMethod['data']->testMode == 1 ? $paymentMethod['data']->sandbox_secret : $paymentMethod['data']->live_secret;
+
+        $toHash = implode('.', $hashData);
+        $toHashFirstPass = sha1($toHash);
+        $shaHash = sha1($toHashFirstPass . '.' . $secret);
+
+        $additionalData = [
+            'ACCOUNT' => $paymentMethod['data']->testMode == 1 ? $paymentMethod['data']->sandbox_account : $paymentMethod['data']->live_account,
+            'AUTO_SETTLE_FLAG' => '1',
+            'HPP_VERSION' => '2',
+            'HPP_POST_RESPONSE' => "https://".$params['host'],
+            'SHA1HASH' => $shaHash
+        ];
+
+        $data = array_merge($hashData, $additionalData);
+
+        $data = json_encode($data);
+
+        $headers = ["Content-Type: application/json","Cache-Control: no-cache"];
+
+        $ch = curl_init();
+
+        if ($paymentMethod['data']->testMode == 1) {
+            curl_setopt($ch, CURLOPT_URL, "https://pay.sandbox.realexpayments.com/pay");                
+        } else {
+            curl_setopt($ch, CURLOPT_URL, "https://pay.realexpayments.com/pay"); 
+        }
+
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+        $r = curl_exec($ch);
+
+        $response = json_decode($r, 1);
+
+        if (isset($response['hppPayByLink'])) {
+            $payLink = $response['hppPayByLink'];
+            return ['success' => 1, 'data' => ['payLink' => $payLink], 'request' => json_decode($data,1)];            
+        } else {
+            return ['success' => 0, 'data' => ['message' => 'unable to generate pay link'], 'request' => json_decode($data,1)];
+        }
     }
 
     public function getDefaultParameters()
