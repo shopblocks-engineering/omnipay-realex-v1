@@ -286,6 +286,16 @@ class RemoteGateway extends AbstractGateway
     {
         return $this->getParameter('response_json');
     }
+    
+    public function setOrderId($value)
+    {
+        $this->setParameter('orderId', $value);
+    }
+
+    public function getOrderId()
+    {
+        return $this->getParameter('orderId');
+    }
 
     public function setTestMode($value)
     {
