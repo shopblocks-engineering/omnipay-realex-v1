@@ -200,6 +200,16 @@ class GenerateTokenRequest extends AbstractRequest
         return $this->getParameter('orderId');
     }
 
+    public function setIsSubscription($value)
+    {
+        return $this->setParameter('issubscription', $value);
+    }
+
+    public function getIsSubscription()
+    {
+        return $this->getParameter('issubscription');
+    }
+
     public function setTestMode($value)
     {
         $this->setParameter('test_mode', $value);
@@ -263,6 +273,7 @@ class GenerateTokenRequest extends AbstractRequest
         $data['billing_address'] = $billingAddress;
         $data['shipping_address'] = $shippingAddress;
         $data['order_id'] = $this->getOrderId();
+        $data['is_subscription'] = $this->getIsSubscription();
 
         $data['amount'] = $this->getAmount();
 
@@ -278,11 +289,13 @@ class GenerateTokenRequest extends AbstractRequest
                            ->withAddress($data['billing_address'], AddressType::BILLING)
                            ->withAddress($data['shipping_address'], AddressType::SHIPPING)
                            ->withOrderId($data['order_id'])
-                           ->withHostedPaymentData($data['hosted_payment_data'])
-                           ->withRecurringInfo(RecurringType::VARIABLE, RecurringSequence::FIRST)
-                           ->serialize();
+                           ->withHostedPaymentData($data['hosted_payment_data']);
 
-            $this->data = $hppJson;
+            if ($data['is_subscription']) { 
+                $hppJson->withRecurringInfo(RecurringType::VARIABLE, RecurringSequence::FIRST);
+            }
+
+            $this->data = $hppJson->serialize();
         } catch (ApiException $ex) {
             dd($ex->getMessage());
         }
